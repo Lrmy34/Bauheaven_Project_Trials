@@ -1,0 +1,90 @@
+openapi: 3.0.3
+info:
+  title: Careflow Clinic Appointment API
+  version: 1.0.0
+  description: Initial contract for the clinic appointment management system.
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/register:
+    post:
+      security: []
+      summary: Register a patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201': { description: Patient created }
+        '400': { description: Validation error }
+  /api/auth/login:
+    post:
+      security: []
+      summary: Authenticate a user
+      responses:
+        '200': { description: Access and refresh tokens returned }
+        '401': { description: Invalid credentials }
+  /api/services:
+    get:
+      summary: List active clinic services
+      responses:
+        '200': { description: Services returned }
+  /api/doctors/{doctorId}/slots:
+    get:
+      summary: List available consultation slots
+      parameters:
+        - { name: doctorId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        '200': { description: Available slots returned }
+  /api/appointments:
+    post:
+      summary: Request an appointment and reserve a slot transactionally
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAppointmentRequest' }
+      responses:
+        '201': { description: Appointment created }
+        '409': { description: Slot is no longer available }
+    get:
+      summary: List appointments visible to the authenticated user
+      responses:
+        '200': { description: Appointments returned }
+  /api/appointments/{appointmentId}/cancel:
+    post:
+      summary: Cancel an eligible appointment
+      parameters:
+        - { name: appointmentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Appointment cancelled }
+        '409': { description: Invalid state transition }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, firstName, lastName, dateOfBirth]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 12, format: password }
+        firstName: { type: string, maxLength: 80 }
+        lastName: { type: string, maxLength: 80 }
+        dateOfBirth: { type: string, format: date }
+    CreateAppointmentRequest:
+      type: object
+      required: [doctorId, serviceId, slotId]
+      properties:
+        doctorId: { type: string, format: uuid }
+        serviceId: { type: string, format: uuid }
+        slotId: { type: string, format: uuid }
+        reason: { type: string, maxLength: 1000 }

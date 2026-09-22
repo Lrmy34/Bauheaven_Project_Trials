@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Careflow clinic appointment operations dashboard">
+  <title>Careflow | Clinic operations</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="state-fix.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#overview" aria-label="Careflow home">
+        <span class="brand-mark">+</span>
+        <span>careflow</span>
+      </a>
+      <div class="workspace-switcher">
+        <span class="eyebrow">Workspace</span>
+        <button class="workspace-button" type="button"><span>Northstar Clinic</span><span aria-hidden="true">⌄</span></button>
+      </div>
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <button class="nav-item is-active" data-view="overview" type="button"><span class="nav-icon">◈</span>Overview</button>
+        <button class="nav-item" data-view="appointments" type="button"><span class="nav-icon">▣</span>Appointments <span class="nav-count">8</span></button>
+        <button class="nav-item" data-view="patients" type="button"><span class="nav-icon">◌</span>Patients</button>
+        <button class="nav-item" data-view="availability" type="button"><span class="nav-icon">◷</span>Availability</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="nav-item" data-view="settings" type="button"><span class="nav-icon">⚙</span>Settings</button>
+        <div class="profile-chip"><span class="avatar avatar-slate">AM</span><span><strong>Alex Morgan</strong><small>Administrator</small></span><span class="more">•••</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark">+</span> careflow</div>
+        <div class="breadcrumbs"><span>Northstar Clinic</span><span class="crumb-separator">/</span><strong id="page-label">Overview</strong></div>
+        <div class="topbar-actions"><button class="icon-button" aria-label="Search" type="button">⌕</button><button class="icon-button notification" aria-label="Notifications" type="button">♧<span></span></button><div class="topbar-date">Tuesday, 22 September 2026</div></div>
+      </header>
+
+      <div class="page-wrap" id="overview">
+        <section class="page-heading">
+          <div><p class="eyebrow accent">Tuesday, 22 September 2026</p><h1 id="view-title">Good morning, Alex<span class="dot">.</span></h1><p class="subtitle" id="view-subtitle">Here is what needs your attention today.</p></div>
+          <button class="primary-button" id="new-appointment" type="button"><span>+</span> New appointment</button>
+        </section>
+
+        <section class="metric-grid" aria-label="Daily metrics">
+          <article class="metric-card metric-blue"><div class="metric-top"><span class="metric-label">Today's appointments</span><span class="metric-icon">◷</span></div><strong class="metric-value">24</strong><div class="metric-footer"><span class="trend-up">↑ 12%</span><span>vs last Tuesday</span></div></article>
+          <article class="metric-card metric-coral"><div class="metric-top"><span class="metric-label">Awaiting confirmation</span><span class="metric-icon">!</span></div><strong class="metric-value">08</strong><div class="metric-footer"><span class="trend-warn">Needs review</span><span>across 3 doctors</span></div></article>
+          <article class="metric-card metric-cream"><div class="metric-top"><span class="metric-label">Completed this week</span><span class="metric-icon">✓</span></div><strong class="metric-value">86</strong><div class="metric-footer"><span class="trend-up">↑ 8.4%</span><span>vs last week</span></div></article>
+          <article class="metric-card metric-lilac"><div class="metric-top"><span class="metric-label">No-show rate</span><span class="metric-icon">↘</span></div><strong class="metric-value">3.2<span class="metric-unit">%</span></strong><div class="metric-footer"><span class="trend-up">↓ 1.1%</span><span>vs last week</span></div></article>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="panel agenda-panel"><div class="panel-heading"><div><span class="section-kicker">Live schedule</span><h2>Today's agenda</h2></div><button class="text-button" type="button" data-view="appointments">View full schedule <span>→</span></button></div><div class="agenda-list" id="agenda-list"></div></article>
+          <article class="panel request-panel"><div class="panel-heading"><div><span class="section-kicker">Action needed</span><h2>Booking requests <span class="count-badge">8</span></h2></div><button class="icon-button" aria-label="More actions" type="button">•••</button></div><div class="request-list" id="request-list"></div><button class="outline-button" data-view="appointments" type="button">Review all requests <span>→</span></button></article>
+        </section>
+
+        <section class="panel appointment-panel"><div class="panel-heading table-heading"><div><span class="section-kicker">Patient flow</span><h2>Upcoming appointments</h2></div><div class="table-actions"><label class="search-box"><span>⌕</span><input id="appointment-search" type="search" placeholder="Search patient"></label><button class="filter-button" type="button">Filter <span>⌄</span></button></div></div><div class="table-wrap"><table><thead><tr><th>Patient</th><th>Doctor</th><th>Service</th><th>Date & time</th><th>Status</th><th></th></tr></thead><tbody id="appointment-table"></tbody></table></div></section>
+        <p class="footer-note">Careflow operations console <span>•</span> Last synced just now</p>
+      </div>
+    </main>
+  </div>
+  <div class="modal-backdrop" id="modal" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" type="button" aria-label="Close">×</button><span class="section-kicker">Quick booking</span><h2 id="modal-title">Create an appointment</h2><p>Capture a new booking request for the clinic schedule.</p><form id="appointment-form"><label>Patient name<input required name="patient" placeholder="e.g. Jordan Lee"></label><label>Service<select name="service"><option>General consultation</option><option>Dental consultation</option><option>Follow-up visit</option></select></label><div class="form-row"><label>Date<input required name="date" type="date" value="2026-09-23"></label><label>Time<input required name="time" type="time" value="09:30"></label></div><button class="primary-button" type="submit">Add to requests</button></form></div></div>
+  <script src="app.js"></script>
+</body>
+</html>
