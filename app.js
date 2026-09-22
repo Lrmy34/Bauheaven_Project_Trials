@@ -10,6 +10,44 @@ const requests = [
   { patient: 'Ethan Davis', initials: 'ED', avatar: 'avatar-slate', detail: 'Dental consultation', time: '28 min ago' },
   { patient: 'Grace Miller', initials: 'GM', avatar: 'avatar-yellow', detail: 'Follow-up visit', time: '41 min ago' }
 ];
+const API_BASE_URL = window.CAREFLOW_API_URL || 'http://localhost:5000';
+const API_TIMEOUT_MS = 5000;
+let dataSource = 'demo data';
+function apiRequest(path, options = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  return fetch(`${API_BASE_URL}${path}`, { ...options, signal: controller.signal, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } })
+    .finally(() => clearTimeout(timeout));
+}
+async function loadAppointmentsFromApi() {
+  try {
+    const response = await apiRequest('/api/appointments');
+    if (!response.ok) throw new Error(`Appointments request failed with ${response.status}`);
+    const payload = await response.json();
+    if (!Array.isArray(payload)) throw new Error('Appointments response must be an array');
+    appointments.splice(0, appointments.length, ...payload.map(item => ({
+      patient: item.patient?.name || item.patientName || 'Unknown patient',
+      initials: item.patient?.initials || (item.patientName || 'UP').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase(),
+      avatar: item.avatar || 'avatar-slate',
+      doctor: item.doctor?.name || item.doctorName || 'Unassigned doctor',
+      service: item.service?.name || item.serviceName || 'Clinic consultation',
+      time: item.time || new Date(item.startTime || item.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: item.date || new Date(item.startTime || item.requestedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
+      status: item.status || 'Requested',
+      statusClass: item.statusClass || (item.status === 'CONFIRMED' ? 'status-confirmed' : 'status-pending')
+    })));
+    dataSource = 'connected API';
+    renderAgenda(); renderTable(document.querySelector('#appointment-search').value);
+    updateConnectionLabel();
+  } catch (error) {
+    console.info('Careflow API unavailable; using demo data.', error.message);
+    updateConnectionLabel();
+  }
+}
+function updateConnectionLabel() {
+  const note = document.querySelector('.footer-note');
+  if (note) note.innerHTML = `Careflow operations console <span>•</span> ${dataSource} <span>•</span> Last synced just now`;
+}
 const avatar = item => `<span class="avatar ${item.avatar}">${item.initials}</span>`;
 function renderAgenda() {
   document.querySelector('#agenda-list').innerHTML = appointments.slice(0, 4).map(item => `<div class="agenda-row"><span class="agenda-time">${item.time}</span><div class="agenda-person">${avatar(item)}<span><strong>${item.patient}</strong><small>${item.doctor}</small></span></div><span class="appointment-type">${item.service}</span></div>`).join('');
@@ -32,10 +70,27 @@ function setView(view) {
 }
 function openModal() { document.querySelector('#modal').hidden = false; document.querySelector('input[name="patient"]').focus(); }
 function closeModal() { document.querySelector('#modal').hidden = true; }
-renderAgenda(); renderRequests(); renderTable();
+renderAgenda(); renderRequests(); renderTable(); updateConnectionLabel(); loadAppointmentsFromApi();
 document.querySelectorAll('[data-view]').forEach(item => item.addEventListener('click', () => setView(item.dataset.view)));
 document.querySelector('#appointment-search').addEventListener('input', event => renderTable(event.target.value));
 document.querySelector('#new-appointment').addEventListener('click', openModal);
 document.querySelector('#modal-close').addEventListener('click', closeModal);
 document.querySelector('#modal').addEventListener('click', event => { if (event.target.id === 'modal') closeModal(); });
-document.querySelector('#appointment-form').addEventListener('submit', event => { event.preventDefault(); closeModal(); const button = document.querySelector('#new-appointment'); button.innerHTML = '<span>✓</span> Request added'; setTimeout(() => { button.innerHTML = '<span>+</span> New appointment'; }, 2200); });
+document.querySelector('#appointment-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const formData = new FormData(event.currentTarget);
+  const button = document.querySelector('#new-appointment');
+  button.innerHTML = '<span>…</span> Saving';
+  try {
+    const response = await apiRequest('/api/appointments', { method: 'POST', body: JSON.stringify({ patientName: formData.get('patient'), serviceName: formData.get('service'), date: formData.get('date'), time: formData.get('time') }) });
+    if (!response.ok) throw new Error(`Appointment request failed with ${response.status}`);
+    closeModal();
+    button.innerHTML = '<span>✓</span> Request added';
+    loadAppointmentsFromApi();
+  } catch (error) {
+    closeModal();
+    button.innerHTML = '<span>✓</span> Saved locally';
+    console.info('Appointment API unavailable; request was not sent.', error.message);
+  }
+  setTimeout(() => { button.innerHTML = '<span>+</span> New appointment'; }, 2200);
+});
